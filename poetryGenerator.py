@@ -9,7 +9,7 @@ def createFileList():
 	#Creating a list with all the filenames inside it [1-1-1.xml, 5-2-9.xml, 7-5-14.xml...]
 	filename_lst = []
 
-	for filename in os.listdir('../syllabary_poems'):
+	for filename in os.listdir('.\syllabary_poems'):
 		if filename.endswith('.xml'):
 			filename_lst.append(filename)
 	return filename_lst
@@ -56,7 +56,10 @@ def createOutputFileList(filename_lst, startingPoem, numOfPoems, max_values):
 	counter3 = 0
 	counter4 = 0
 
+	print("BONG")
+	print(str(startingPoem) + ".xml")
 	final_lst.append(str(startingPoem) + ".xml")
+	print("new type startingPoem: " + startingPoem)
 	filename_lst.remove(startingPoem + '.xml')
 	while len(final_lst) < numOfPoems: 
 		for i, j in zip(range(3), max_values):
@@ -100,14 +103,14 @@ def readingXML(final_lst):
 		tree = ET.parse(filename)
 		root = tree.getroot()
 		temp_lst.append(root[0].text)
-		temp_lst.append(root[2].text)
+		temp_lst.append(root[2].text) 
 		content_lst.append(temp_lst)
 		name_lst.append(filename[:-4])
 
 	text_dict = dict(zip(name_lst, content_lst))
 	return text_dict
 
-def creatingTextDocumentOutput(text_dict):
+def creatingTextDocumentOutput(text_dict, final_lst):
 	#Outputting to a word document
 	counter2 = 0
 
