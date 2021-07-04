@@ -8,10 +8,12 @@ import poemFinder as pf
 
 class PoetryGenerator(tk.Tk):
     def __init__(self, *args, **kwargs):
+        # Don't know what this does, will figure it out later. Probably auto initialises a root or something
         tk.Tk.__init__(self, *args, **kwargs)
         #self is equal to root in this class (i.e. self.root)
 
-        # Initalise master window container (1x1 grid that expands in any direction) 
+        # Set up a single container that can expand into space horizontally and vertically
+        # I'm not sure why you do this, wouldn't this be default behaviour for a root? Apparently not if you're setting it here. This is probably pretty standard
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
@@ -20,9 +22,11 @@ class PoetryGenerator(tk.Tk):
         self.main_container.grid(column=0, row=0, sticky = "nsew")
         self.main_container.grid_rowconfigure(0, weight = 1)
         self.main_container.grid_columnconfigure(0, weight = 1)
-        
-        # Get pageOne as an object by passing through its parameters
-        # Then switch master window container to pageOne
+
+        # This takes in PageOne as an object and loops over it's variables
+        # It then creates a frame for each variable and sets it equal to the container
+        # e.g. self.frames['title'] = tk.Label(self, text = "Syllabary Poem Generator", font=("Times New Roman", 40, 'italic'))
+        # After this is completed switch the current window to PageOne
         self.frames = {}
         for args in (PageOne,):
             frame = args(self.main_container, self)
@@ -30,12 +34,14 @@ class PoetryGenerator(tk.Tk):
             frame.grid(row = 0, column = 0, sticky = "nsew")
         self.show_frame(PageOne)
 
-    # Method to switch master window container to a new window object
+    # This takes in the parent page and the child window 
+    # In TKinter you often have multiple windows 
+    # tkraise the method used to switch current windows 
     def show_frame(self, pointer):
         frame = self.frames[pointer]
         frame.tkraise()
 
-    # Method that generates a list of files from the folder called 'syllabary_poems' based on the user inputs
+
     def runPoemFinder(self):
         allPoemsList = pf.createFileList()
         max_values = pf.findMaxValues(allPoemsList)
@@ -45,7 +51,6 @@ class PoetryGenerator(tk.Tk):
         pf.creatingTextDocumentOutput(selectedPoemsDict, selectedPoemsList)
         print("poem order is: " + str(self.poemOrder.get()))
 
-    # When button is pressed call runPoemFinder
     def submit(self):
         self.runPoemFinder()
         self.root.destroy()
@@ -53,15 +58,18 @@ class PoetryGenerator(tk.Tk):
 class PageOne(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
+        # I think you set your different windows as separate classes. That seems reasonable. Guess I'll find out 
 
-        # Initialise pageOne container (4x1 grid where all rows expand horizontally and row 1 expands vertically as well)
+        # Create a root container that has three rows, all with the ability to expand into surrounding space horizontally. Row 1 also expands upwards
+        # I guess you just do this because you know you have four things to initialise - title, graphs, page2 and exit
+        # The title expanding upwards is also probably pretty standard, I imagine you always use that
         self.columnconfigure(0, weight = 1)
         self.rowconfigure(0, weight = 1)
         self.rowconfigure(1, weight = 1)
         self.rowconfigure(2, weight = 1)
         self.rowconfigure(3, weight = 1)
 
-        # Creating a title and assigning it to the first row of the window 
+        # Creating a title and assigning it to the first row of the window (i.e. assigning it to self)
         titleLabel = tk.Label(self, text = "Syllabary Poem Generator", font=("Times New Roman", 40, 'italic'))
         titleLabel.grid(row = 0, padx = 10, pady = 10)
                 
