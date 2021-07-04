@@ -1,142 +1,86 @@
-import xml.etree.ElementTree as ET
+import tkinter as tk
 import os
-import docx
-from docx.enum.text import WD_BREAK
-from docx.shared import Pt
-from docx.enum.text import WD_LINE_SPACING
+import datetime 
+import sys
+from termcolor import colored
+import poemFinder as pf
 
-def createFileList():
-	#Creating a list with all the filenames inside it [1-1-1.xml, 5-2-9.xml, 7-5-14.xml...]
-	filename_lst = []
+# numOfPoems = 0
+# poemOrder = ''
+class poetryGenerator:
+    def __init__(self, root):
+        # Initialising all input objects, properties and labels
+        self.root = root
+        self.root.geometry("1000x1000")
+        self.root.title("Syllabary Poetry Generator")
 
-	for filename in os.listdir('.\syllabary_poems'):
-		if filename.endswith('.xml'):
-			filename_lst.append(filename)
-	return filename_lst
+        self.startingPoem = tk.StringVar()
+        self.numOfPoems = tk.IntVar()
+        self.poemOrder = tk.StringVar()
+        self.poemOrder.set(' ') 
+        self.poemNumLabel = tk.Label(self.root, text="How many poems do you want to generate?")
+        self.poemNumEntry = tk.Entry(self.root, textvariable=self.numOfPoems, font=('calibre', 10, 'normal'))
+        self.startingPoemLabel = tk.Label(self.root, text="What poem do you want to start with?")
+        self.startingPoemEntry = tk.Entry(self.root, textvariable=self.startingPoem, font=('calibre', 10, 'normal'))
+        self.poemOrderLabel = tk.Label(self.root, text="Would you like to output the poems forwards or in reverse order?")
+        self.radioButton1 = tk.Radiobutton(self.root, text="forwards", variable=self.poemOrder, value="forwards")
+        self.radioButton2 = tk.Radiobutton(self.root, text="backwards", variable=self.poemOrder, value="backwards")
+        self.button = tk.Button(self.root, text="Submit", command=self.submit)
+            
+    def packFrame(self):
+        # Packing all objects so they can be viewed
+        self.poemNumLabel.pack()
+        self.poemNumEntry.pack()
+        self.startingPoemLabel.pack()
+        self.startingPoemEntry.pack()
+        self.poemOrderLabel.pack()
+        self.radioButton1.pack()
+        self.radioButton2.pack()
+        self.button.pack()
+    
+    def runPoemFinder(self):
+        allPoemsList = pf.createFileList()
+        max_values = pf.findMaxValues(allPoemsList)
+        selectedPoemsList = pf.createOutputFileList(allPoemsList, self.startingPoem.get(), self.numOfPoems.get(), max_values)
+        selectedPoemsList = pf.reverseList(self.poemOrder, selectedPoemsList)
+        selectedPoemsDict = pf.readingXML(selectedPoemsList)
+        pf.creatingTextDocumentOutput(selectedPoemsDict, selectedPoemsList)
+        print("poem order is: " + str(self.poemOrder.get()))
 
-def findMaxValues(filename_lst):
-	#Finding max values of X, Y and Z for "X-Y-Z.xml files. This is used later in the main algorithm"
-	titleX_lst = []
-	titleY_lst = []
-	titleZ_lst = []
+    def submit(self):
+        self.runPoemFinder()
+        self.root.destroy()
+        
+def sysStatus(message, useTS=True, color='white'):
+    #Cheap way of displaying timed status messages to terminal
+    rawtime = datetime.datetime.now()
+    timeStamp = rawtime.strftime('%Y-%m-%d %H:%M:%S')
 
-	for file in filename_lst:
-		titleX_lst.append(int(file[:-4].split("-")[0]))
-		titleY_lst.append(int(file[:-4].split("-")[1]))
-		titleZ_lst.append(int(file[:-4].split("-")[2]))
+    if useTS:
+        #print(timeDisplay + colored(f'  {message}', 'green'))
+        print(f'{timeStamp}:     {message}')
+    else:
+        print(colored(f'{message}', color))
 
-	max_x = max(titleX_lst)
-	max_y = max(titleY_lst)
-	max_z = max(titleZ_lst)
-	max_values = [max_x, max_y, max_z]
+def preRunCleanUp():
+    #Clears out the terminal so you can easily view when the latest run was initiated
+    if sys.platform.startswith('linux'):
+        os.system('clear')
+    elif sys.platform.startswith('win'):
+        os.system('cls')
 
-	return max_values
+    sysStatus('Run Started...\n')
+    
+def main():
+    root = tk.Tk()
 
-def getUserInput(filename_lst):
-	#Handling user input errors. code = code_original is used in the main algorithm
-	limit = int(input('How many poems do you want? '))
-	while limit > len(filename_lst):
-		print("Invalid input. Input a number equal to or less than " + str(len(filename_lst)))
-		limit = int(input('How many poems do you want? '))
+    syllabaryGenerator = poetryGenerator(root)
+    syllabaryGenerator.packFrame()
 
-	code_original = input('What poem do you want to start with? ')
-	code = code_original
+    root.mainloop()
+    
+if __name__ == "__main__":
+    preRunCleanUp()
+    main()
+    
 
-	order_var = input('Do you want it outputted in reverse order (type "yes" or "no")')
-
-"""
-This algorithm creates a list of the files that are going to be printed out. 
-It does this by taking the X coordinate in an X-Y-Z.xml file (e.g. in 1-2-3.xml x=1) then adding 1 to the X coordinate and checking to see if that file exists. 
-If the file doesn't exist then it adds 1 again and checks if that files exists until it finds a file that does exist. Then it adds that file name to the final 
-list. This process is then repeated for the X, Y and Z coordinates. Once a filename is added to the final list then that filename is removed from the original list (so there are no doubles in the final list). 
-"""
-
-def createOutputFileList(filename_lst, startingPoem, numOfPoems, max_values):
-	final_lst = []
-	counter3 = 0
-	counter4 = 0
-
-	print("BONG")
-	print(str(startingPoem) + ".xml")
-	final_lst.append(str(startingPoem) + ".xml")
-	print("new type startingPoem: " + startingPoem)
-	filename_lst.remove(startingPoem + '.xml')
-	while len(final_lst) < numOfPoems: 
-		for i, j in zip(range(3), max_values):
-			counter3 = 0 
-			if len(final_lst) < numOfPoems:
-				countVar = len(final_lst)
-				while len(final_lst) == countVar: 
-					counter4 += 1
-					code = code.split("-")
-					code = [int(x) for x in code]
-					code[i] += 1
-					counter3 += 1
-					if code[i] > j: 
-						code[i] = 1
-					code = [str(x) for x in code]
-					code = '-'.join(code)
-					if counter3 > j: 
-						break
-					if counter4 > 10000: 
-						final_lst.append(filename_lst[0])
-						filename_lst.remove(filename_lst[0])
-					if code + ".xml" in filename_lst:
-						counter4 = 0
-						final_lst.append(code + '.xml')
-						filename_lst.remove(code + '.xml')
-	return final_lst
-
-def reverseList(order_var, final_lst):
-	#Reverse list order if user requests it
-	if order_var == "yes":
-		final_lst = final_lst[::-1]		
-	return final_lst			
-
-def readingXML(final_lst):
-	#Creating a dictionary in the form (filename: [title, text])
-	name_lst = []
-	content_lst = []
-
-	for filename in final_lst:
-		temp_lst = []
-		tree = ET.parse(filename)
-		root = tree.getroot()
-		temp_lst.append(root[0].text)
-		temp_lst.append(root[2].text) 
-		content_lst.append(temp_lst)
-		name_lst.append(filename[:-4])
-
-	text_dict = dict(zip(name_lst, content_lst))
-	return text_dict
-
-def creatingTextDocumentOutput(text_dict, final_lst):
-	#Outputting to a word document
-	counter2 = 0
-
-	doc = docx.Document()
-	for i in text_dict.keys():
-		counter2 += 1 
-		style = doc.styles['Normal']
-		font = style.font
-		font.name = 'Helvetica'
-		font.size = Pt(14)
-		par = doc.add_paragraph()
-		par.paragraph_format.line_spacing = 1
-		run1 = par.add_run(i)
-		run1.add_break(WD_BREAK.LINE)
-		run1.add_break(WD_BREAK.LINE)
-		if text_dict[i][0] != None:
-			if text_dict[i][0].isspace() == False:
-				run2 = par.add_run(text_dict[i][0])
-				run2.bold = True
-				run2.add_break(WD_BREAK.LINE)
-				run2.add_break(WD_BREAK.LINE)
-		run3 = par.add_run(text_dict[i][1])
-		if counter2 < len(text_dict):
-			run3.add_break(WD_BREAK.PAGE)
-	doc.save('Syllabary Test.docx')
-
-	print(text_dict.keys())
-	print("length is " + str(len(final_lst)))
-	print("length of set is " + str(len(set(text_dict.keys()))))
