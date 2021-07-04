@@ -6,60 +6,95 @@ import sys
 from termcolor import colored
 import poemFinder as pf
 
-class PoetryGenerator(tk.Frame):
-    def __init__(self, parent):
-        tk.Frame.__init__(self, parent)
-        #mainFrame = Frame(self, bg='blue')
-        # Initialising all input objects, properties and labels
-        #self.root = root
-        #self.root.geometry("1000x1000")
-        #pad=3
-        #self.root.geometry("{0}x{1}".format(self.root.winfo_screenwidth()-pad, self.root.winfo_screenheight()-pad))
-            # self.title("Syllabary Poetry Generator")
-            # self.attributes("-fullscreen", True)
-        # mainFrame = tk.Frame(self.root,bg="blue")
+class PoetryGenerator:
+    def __init__(self, root):
+        self.root = root
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+        self.frame = tk.Frame(self.root)
+        self.subframe1 = tk.Frame(self.frame, borderwidth=5, relief=tk.RIDGE, bg='green')
+        self.subframe2 = ttk.Frame(self.frame, borderwidth=30, relief=tk.RIDGE)
+        self.subframe3 = ttk.Frame(self.frame, borderwidth=30, relief=tk.RIDGE)
+        self.subframe4 = ttk.Frame(self.frame, borderwidth=30)
+        
+
+        style = ttk.Style()
+        style.configure('W.TLabel', font=('calibre', 20, 'normal'))
+        style.configure('W.TEntry', font=('calibre', 20, 'normal'), relief=tk.FLAT, borderwidth=15)
+        style.configure('W.TRadiobutton', font=('calibre', 20, 'normal'))
+        style.configure('W.TButton', font=('calibre', 20, 'normal'))
+        
+        self.root.title("Syllabary Poetry Generator")
+        self.root.attributes("-fullscreen", True)
 
         self.startingPoem = tk.StringVar()
         self.numOfPoems = tk.IntVar()
         self.poemOrder = tk.StringVar()
         self.poemOrder.set(' ') 
-        self.poemNumLabel = tk.Label(self, text="How many poems do you want to generate?", bg='green')
-        self.poemNumEntry = tk.Entry(self, textvariable=self.numOfPoems, font=('calibre', 10, 'normal'))
-        self.startingPoemLabel = tk.Label(self, text="What poem do you want to start with?", bg='green')
-        self.startingPoemEntry = tk.Entry(self, textvariable=self.startingPoem, font=('calibre', 10, 'normal'))
-        self.poemOrderLabel = tk.Label(self, text="Would you like to output the poems forwards or in reverse order?", bg='green')
-        self.radioButton1 = tk.Radiobutton(self, text="forwards", variable=self.poemOrder, value="forwards")
-        self.radioButton2 = tk.Radiobutton(self, text="backwards", variable=self.poemOrder, value="backwards")
-        self.button = tk.Button(self, text="Submit", command=self.submit)
-        self.exit_button = tk.Button(self, text="Exit Window", command=self.destroy)
-
-        # tk.Frame.__init__(self, parent)
-        # label = tk.Label(self, text="This should be centered")
-        # label.grid(row=1, column=1)
-        
-        
-        # self.grid(row=0, column=0, sticky="NESW")
-        # self.grid_rowconfigure(0, weight=1)
-        # self.grid_columnconfigure(0, weight=1)
-        # self.root.grid_rowconfigure(0, weight=1)
-        # self.root.grid_columnconfigure(0, weight=1)
-        
+        self.poemNumLabel = ttk.Label(self.subframe1, text="How many poems do you want to generate?", style='W.TLabel')
+        self.poemNumEntry = ttk.Entry(self.subframe1, textvariable=self.numOfPoems, style='W.TEntry', font=('calibre', 15, 'normal'))
+        self.startingPoemLabel = ttk.Label(self.subframe2, text="What poem do you want to start with?", style='W.TLabel')
+        self.startingPoemEntry = ttk.Entry(self.subframe2, textvariable=self.startingPoem, style='W.TEntry', font=('calibre', 15, 'normal'))
+        self.poemOrderLabel = ttk.Label(self.subframe3, text="Would you like to output the poems forwards or in reverse order?", style='W.TLabel')
+        self.radioButton1 = ttk.Radiobutton(self.subframe3, text="forwards", variable=self.poemOrder, value="forwards", style='W.TRadiobutton')
+        self.radioButton2 = ttk.Radiobutton(self.subframe3, text="backwards", variable=self.poemOrder, value="backwards", style='W.TRadiobutton')
+        self.button = ttk.Button(self.subframe4, text="Submit", command=self.submit, style='W.TButton')
+        self.exit_button = ttk.Button(self.subframe4, text="Exit Window", command=self.root.destroy, style='W.TButton')
 
             
-    def packFrame(self):
+    def setGrid(self):
         # Packing all objects so they can be viewed
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_columnconfigure(0, weight=1)
+        self.poemNumLabel.grid(row=0, column=0, pady=(0, 10), sticky='nesw')
+        self.poemNumEntry.grid(row=1, column=0, pady=(5, 40), ipadx=220, ipady=5, sticky='nesw')
+        self.startingPoemLabel.grid(row=2, column=0, pady=(0, 10), ipadx=10, sticky='nesw')
+        self.startingPoemEntry.grid(row=3, column=0, pady=(5, 40), ipadx=20, ipady=5, sticky='nesw')
+        self.poemOrderLabel.grid(row=4, column=0, pady=(0, 10), sticky='nesw')
+        self.radioButton1.grid(row=5, column=0, pady=(5, 40), sticky='nesw')
+        self.radioButton2.grid(row=5, column=1, pady=(5, 40), sticky='nesw')
+        self.button.grid(row=6, column=0, pady=(10, 10), ipady=15, sticky='nesw')
+        self.exit_button.grid(row=7, column=0, pady=(50, 0), ipady=15, columnspan=2, sticky='nesw')
 
-        self.poemNumLabel.grid()
-        self.poemNumEntry.grid()
-        self.startingPoemLabel.grid()
-        self.startingPoemEntry.grid()
-        self.poemOrderLabel.grid()
-        self.radioButton1.grid()
-        self.radioButton2.grid()
-        self.button.grid()
-        self.exit_button.grid()
+        self.frame.grid(column=0, row=0, sticky='nsew')
+        self.frame.grid_rowconfigure(0, weight = 1)
+        self.frame.grid_columnconfigure(0, weight = 1)
+
+        self.frame.place(relx=0.5, rely=0.5, anchor='center')
+
+        #self.frame.grid_rowconfigure(0, weight=1)
+        # self.subframe1.pack(fill="both", expand=True, padx=20, pady=20)
+        #self.subframe1.grid()
+        # self.subframe1.place(relx=0.5, rely=0.5, anchor='center')
+        # self.subframe2.place(relx=0.5, rely=0.5, anchor='center')
+        # self.subframe3.place(relx=0.5, rely=0.5, anchor='center')
+        # self.subframe4.place(relx=0.5, rely=0.5, anchor='center')
+
+        # self.subframe1.grid(row=1, column=0, sticky="nsew")
+        self.subframe2.grid(row=1, column=0, sticky="nsew")
+        self.subframe3.grid(row=2, column=0, sticky="nsew")
+        self.subframe4.grid(row=3, column=0, sticky="nsew")
+
+        # self.frame.grid_rowconfigure(0, weight=1)
+        # self.frame.grid_rowconfigure(1, weight=1)
+        # self.frame.grid_rowconfigure(2, weight=1)
+        # self.frame.grid_rowconfigure(3, weight=1)
+
+        
+        # self.subframe1.grid(sticky='we')
+        # self.root.grid_rowconfigure(0, weight=1)
+
+        # self.subframe2.place(relx=0.5, rely=0.5, anchor='center')
+        # self.subframe2.grid(sticky='we')
+        # self.root.grid_rowconfigure(1, weight=1)
+
+        # self.subframe3.grid(sticky='we')
+        # self.root.grid_rowconfigure(2, weight=1)
+
+        # self.subframe4.grid(sticky='we')
+        # self.root.grid_rowconfigure(3, weight=1)
+
+        # self.root.grid_rowconfigure(1, weight=1)
+        
+        
     
     def runPoemFinder(self):
         allPoemsList = pf.createFileList()
@@ -75,15 +110,7 @@ class PoetryGenerator(tk.Frame):
         self.root.destroy()
 
     def styleFrame(self):
-        style = ttk.Style()
-        style.theme_use("clam")
-        # self.root.grid_rowconfigure(0, weight=1)
-        # self.root.grid_columnconfigure(0, weight=1)
-        # self.root.grid_columnconfigure(0, weight=1)
-        # self.root.grid_rowconfigure(0, weight=1)
-        # self.root.config(height=500, width=500)
-        # style = tk.Canvas(self.root, bg = 'red', height=100, width=100)
-        # style.place(relx=0.5, rely=0.5, anchor=CENTER)
+        return
         
 def sysStatus(message, useTS=True, color='white'):
     #Cheap way of displaying timed status messages to terminal
@@ -109,16 +136,20 @@ def main():
     root = tk.Tk()
 
     syllabaryGenerator = PoetryGenerator(root)
-    syllabaryGenerator.grid(sticky="nsew")
-    root.grid_rowconfigure(0, weight=1)
-    root.grid_columnconfigure(0, weight=1)
-    syllabaryGenerator.packFrame()
+    # syllabaryGenerator.grid(sticky="nsew")
+    # root.grid_rowconfigure(0, weight=1)
+    # root.grid_columnconfigure(0, weight=1)
     syllabaryGenerator.styleFrame()
+    syllabaryGenerator.setGrid()
+    
 
     root.mainloop()
+
     
 if __name__ == "__main__":
     preRunCleanUp()
     main()
     
+    
+
 
