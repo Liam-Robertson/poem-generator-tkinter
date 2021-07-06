@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-
+"""
 LARGE_FONT = ("ariel", 20) # dont know what you had here
 
 class Main(tk.Tk):
@@ -85,3 +85,5 @@ class MainPage(tk.Frame):
 app = Main()
 app.geometry("1280x720")
 app.mainloop()
+
+"""

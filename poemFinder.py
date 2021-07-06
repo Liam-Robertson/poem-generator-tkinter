@@ -6,24 +6,40 @@ from docx.shared import Pt
 from docx.enum.text import WD_LINE_SPACING
 from os.path import isfile, join
 import requests
+import datetime
+from termcolor import colored
 import re
+from pathlib import Path
+import sys
+import utils.customUtils
+from utils.customUtils import sysStatus, debugVar, debugMess, _convertPath
 
-def createFileList():
+def createFileList(numOfPoems):
 	#Creating a list with all the filenames inside it [1-1-1.xml, 5-2-9.xml, 7-5-14.xml...]
-	filename_lst = []
+	sysStatus("Reading input files...\n")
+	path = r'.\syllabary_poems'
+	inputFileList = []
+	for filename in os.listdir(path):
+		if filename[-4:] == '.xml':
+			inputFileList.append(filename)
+		else:
+			sysStatus('Warning: file in the wrong format: "{}"'.format(filename))
+			sysStatus('Skipping file.\n')
 
-	for filename in os.listdir('.\syllabary_poems'):
-		if filename.endswith('.xml'):
-			filename_lst.append(filename)
-	return filename_lst
+	if len(inputFileList) != 0:
+		sysStatus("Success: {} files located. Processing data...\n\n".format(len(inputFileList)))
+	else:
+		sysStatus("Error: failed to find files. Script exiting.")
+		exit()
+	return inputFileList
 
-def findMaxValues(filename_lst):
+def findMaxValues(inputFileList):
 	#Finding max values of X, Y and Z for "X-Y-Z.xml files. This is used later in the main algorithm"
 	titleX_lst = []
 	titleY_lst = []
 	titleZ_lst = []
 
-	for file in filename_lst:
+	for file in inputFileList:
 		titleX_lst.append(int(file[:-4].split("-")[0]))
 		titleY_lst.append(int(file[:-4].split("-")[1]))
 		titleZ_lst.append(int(file[:-4].split("-")[2]))
@@ -34,18 +50,6 @@ def findMaxValues(filename_lst):
 	max_values = [max_x, max_y, max_z]
 
 	return max_values
-
-# def getUserInput(filename_lst, numOfPoems, poemOrder):
-# 	#Handling user input errors. code = code_original is used in the main algorithm
-# 	limit = int(input('How many poems do you want? '))
-# 	while limit > len(filename_lst):
-# 		print("Invalid input. Input a number equal to or less than " + str(len(filename_lst)))
-# 		limit = int(input('How many poems do you want? '))
-
-# 	code_original = input('What poem do you want to start with? ')
-# 	code = code_original
-
-# 	order_var = input('Do you want it outputted in reverse order (type "yes" or "no")')
 
 """
 This algorithm creates a list of the files that are going to be printed out. 
