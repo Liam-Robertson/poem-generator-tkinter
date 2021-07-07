@@ -5,7 +5,7 @@ import datetime
 import sys
 from termcolor import colored
 import utils.customUtils as cu
-from utils.customUtils import sysStatus, debugVar, debugMess, _convertPath
+from utils.customUtils import sysStatus, debugStr, debugVar, _convertPath
 import poemFinder as pf
 
 class PoetryGenerator(tk.Tk):
