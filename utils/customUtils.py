@@ -14,12 +14,10 @@ def sysStatus(message, lineSpacing=1):
 			coloredWarning = colored(warningCodes[index], warningColors[index])
 			message = message.replace(warningCodes[index], coloredWarning)
 	printStatement = f'{timeStamp}    {message}'
-	counterList = [0, 0]
 	counterList = [abs(lineSpacing) // 2] * 2
 	if abs(lineSpacing) % 2 == 1:
 		if lineSpacing < 0: 
 			counterList[1] += 1
-			lineSpacing = abs(lineSpacing)
 		elif lineSpacing > 0: 
 			counterList[0] += 1
 	printStatement = '{}{}{}'.format(counterList[1] * '\n', printStatement, counterList[0] * '\n')

@@ -11,8 +11,10 @@ from termcolor import colored
 import re
 from pathlib import Path
 import sys
+importFilePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'utils')
+sys.path.append(importFilePath)
 import utils.customUtils
-from utils.customUtils import sysStatus, debugVar, debugMess, _convertPath
+from utils.customUtils import sysStatus, debugVar, _convertPath
 
 def createFileList(numOfPoems):
 	#Creating a list with all the filenames inside it [1-1-1.xml, 5-2-9.xml, 7-5-14.xml...]
