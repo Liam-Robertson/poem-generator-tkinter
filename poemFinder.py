@@ -1,149 +1,163 @@
 import xml.etree.ElementTree as ET
+from lxml import etree
 import os
 import docx
 from docx.enum.text import WD_BREAK
 from docx.shared import Pt
 from docx.enum.text import WD_LINE_SPACING
+import itertools
 from os.path import isfile, join
 import requests
 import datetime
+import tkinter as tk
+from tkinter import ttk 
+import math
 from termcolor import colored
-import re
+import re 
 from pathlib import Path
 import sys
-importFilePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'utils')
-sys.path.append(importFilePath)
-import utils.customUtils
-from utils.customUtils import sysStatus, debugVar, _convertPath
+importFilePath1 = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'utils')
+sys.path.append(importFilePath1)
+import customUtils as cu
+from customUtils import sysStatus, debugVar, convertPath
+poemListPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'syllabaryPoems')
+selectingProgressDict = {}
+selectingProgressDict['Progress Value'] = [0]
 
-def createFileList(numOfPoems):
-	#Creating a list with all the filenames inside it [1-1-1.xml, 5-2-9.xml, 7-5-14.xml...]
-	sysStatus("Reading input files...\n")
-	path = r'.\syllabary_poems'
-	inputFileList = []
-	for filename in os.listdir(path):
-		if filename[-4:] == '.xml':
-			inputFileList.append(filename)
-		else:
-			sysStatus('Warning: file in the wrong format: "{}"'.format(filename))
-			sysStatus('Skipping file.\n')
+def createProgressBar(parentFrame, rowVar):
+	selectingPoemsProgress = ttk.Progressbar(parentFrame, orient=tk.HORIZONTAL, length=300, mode='determinate')
+	selectingPoemsProgress.grid(column=0, row=rowVar, padx=30)
+	return selectingPoemsProgress
 
-	if len(inputFileList) != 0:
-		sysStatus("Success: {} files located. Processing data...\n\n".format(len(inputFileList)))
-	else:
-		sysStatus("Error: failed to find files. Script exiting.")
-		exit()
-	return inputFileList
+def createOutputPoemList(startingPoem, numOfPoems, poemOrder, parentFrame):
+	"""Creates a set for X,Y,Z coordinates where filename is X-Y-Z.xml
+	Loops through (X+i)-Y-Z.xml until it finds a file which exists in the input directory 
+	Once that is found it will loop through X-(Y+i)-Z.xml and so on """
 
-def findMaxValues(inputFileList):
-	#Finding max values of X, Y and Z for "X-Y-Z.xml files. This is used later in the main algorithm"
-	titleX_lst = []
-	titleY_lst = []
-	titleZ_lst = []
+	"""
+	Notes: 
+	- The remaining list needs to be in integer form to be sorted
+	- itertools.cycle can't be used because you are removing items from the cycle 
+	"""
 
-	for file in inputFileList:
-		titleX_lst.append(int(file[:-4].split("-")[0]))
-		titleY_lst.append(int(file[:-4].split("-")[1]))
-		titleZ_lst.append(int(file[:-4].split("-")[2]))
+	counter = 0
+	stepSize = float(300 / numOfPoems)
+	outputPoemList = []
+	currentCoordinateAxis = 'X'
+	coordinateAxisList = ['X', 'Y', 'Z']
+	startingPoemSplit = [int(startingPoem.split("-")[0]), int(startingPoem.split("-")[1]), int(startingPoem.split("-")[2])]
+	remainingPoemList = [filename[:-4] for filename in os.listdir(poemListPath) if (os.path.isfile(os.path.join(poemListPath, filename)) and filename[-4:] == '.xml')]
+	remainingPoemListSplit = [[int(poemName.split("-")[0]), int(poemName.split("-")[1]), int(poemName.split("-")[2])] for poemName in remainingPoemList]
+	remainingPoemListSplit.sort()
+	startingPoemIndex = remainingPoemListSplit.index(startingPoemSplit)
+	remainingPoemListSplit = remainingPoemListSplit[startingPoemIndex:] + remainingPoemListSplit[:startingPoemIndex]
+	nextCoordAxisDict = {'X': 'Y', 'Y': 'Z', 'Z': 'X'}
+	selectingPoemsCounter = [0]
+	global selectingProgressDict
+	selectingProgressDict["Progress Value"] = selectingPoemsCounter
+	selectedProgressBar = createProgressBar(parentFrame, rowVar=1)
 
-	max_x = max(titleX_lst)
-	max_y = max(titleY_lst)
-	max_z = max(titleZ_lst)
-	max_values = [max_x, max_y, max_z]
+	availableCoordinatesDict = {}
+	for index in range(len(coordinateAxisList)):
+		orderedUniqueCoordinateList = sorted(set([poemNameSplit[index] for poemNameSplit in remainingPoemListSplit]))
+		availableCoordinatesDict[coordinateAxisList[index]] = orderedUniqueCoordinateList
+	targetCoordinate = (availableCoordinatesDict['X'])[0]
 
-	return max_values
+	while len(outputPoemList) < numOfPoems:
+		for currentPoemSplit in remainingPoemListSplit:
+			if len(outputPoemList) == numOfPoems:
+				print(f'Success: length of output list is {len(outputPoemList)}')
+				return outputPoemList
+				break
+			elif len(outputPoemList) != numOfPoems:
+				# Getting initial coordinate axis
+				currentAxisIndex = coordinateAxisList.index(currentCoordinateAxis)
+				currentCoordinate = currentPoemSplit[currentAxisIndex]
+				# print(f'current poem: {currentPoemSplit}')
+				# print(f'current coordinate: {currentCoordinate}')
+				# print(f'current axis: {currentCoordinateAxis}')
+				# print(f'target coordinate: {targetCoordinate}')
+				if currentCoordinate == targetCoordinate:
+					# Moving to next coordinate axis					
+					currentCoordinateAxis = nextCoordAxisDict[currentCoordinateAxis]
+					currentAxisIndex = coordinateAxisList.index(currentCoordinateAxis)
+					currentCoordinate = currentPoemSplit[currentAxisIndex]
 
-"""
-This algorithm creates a list of the files that are going to be printed out. 
-It does this by taking the X coordinate in an X-Y-Z.xml file (e.g. in 1-2-3.xml x=1) then adding 1 to the X coordinate and checking to see if that file exists. 
-If the file doesn't exist then it adds 1 again and checks if that files exists until it finds a file that does exist. Then it adds that file name to the final 
-list. This process is then repeated for the X, Y and Z coordinates. Once a filename is added to the final list then that filename is removed from the original list (so there are no doubles in the final list). 
-"""
+					# Getting variables needed to create target coordinate
+					originalLengthAvailableCoords = len(availableCoordinatesDict[currentCoordinateAxis])
+					currentSetIndex = availableCoordinatesDict[currentCoordinateAxis].index(currentCoordinate)
+					if currentSetIndex == len(availableCoordinatesDict[currentCoordinateAxis]) - 1:
+						targetIndex = 0
+					else:
+						targetIndex = currentSetIndex + 1
 
-def createOutputFileList(filename_lst, startingPoem, numOfPoems, max_values):
-	final_lst = []
-	counter3 = 0
-	counter4 = 0
+					# Appending to success list, removing from current list and updating available coordinates
+					outputPoemList.append(currentPoemSplit)
+					remainingPoemListSplit = [poemNameSplit for poemNameSplit in remainingPoemListSplit if poemNameSplit != currentPoemSplit]
+					availableCoordinatesDict[currentCoordinateAxis] = sorted(set([poemNameSplit[currentAxisIndex] for poemNameSplit in remainingPoemListSplit]))
 
-	final_lst.append(str(startingPoem) + ".xml")
-	filename_lst.remove(startingPoem + '.xml')
-	while len(final_lst) < numOfPoems: 
-		for i, j in zip(range(3), max_values):
-			counter3 = 0 
-			if len(final_lst) < numOfPoems:
-				countVar = len(final_lst)
-				while len(final_lst) == countVar: 
-					counter4 += 1
-					code = startingPoem.split("-")
-					code = [int(x) for x in code]
-					code[i] += 1
-					counter3 += 1
-					if code[i] > j: 
-						code[i] = 1
-					code = [str(x) for x in code]
-					code = '-'.join(code)
-					if counter3 > j: 
-						break
-					if counter4 > 10000: 
-						final_lst.append(filename_lst[0])
-						filename_lst.remove(filename_lst[0])
-					if code + ".xml" in filename_lst:
-						counter4 = 0
-						final_lst.append(code + '.xml')
-						filename_lst.remove(code + '.xml')
-	return final_lst
+					# Taking into account whether the set changed size
+					newLengthAvailableCoords = len(availableCoordinatesDict[currentCoordinateAxis])
+					if originalLengthAvailableCoords ==  newLengthAvailableCoords + 1:
+						targetIndex -= 1
 
-def reverseList(poemOrder, final_lst):
-	#Reverse list order if user requests it
-	if poemOrder == "backwards":
-		final_lst = final_lst[::-1]		
-	return final_lst			
+					# Creating target coordinate
+					targetCoordinate = (availableCoordinatesDict[currentCoordinateAxis])[targetIndex]
 
-def readingXML(filenameList):
-	#Creating a dictionary in the form (filename: [title, text])
-	name_lst = []
-	content_lst = []	
-	for filename in filenameList:
-		temp_lst = []
-		dirpath = '.\syllabary_poems'
-		filepath = '{}\{}'.format(dirpath, filename)
-		tree = ET.parse(filepath)
+					# Updating Progress bar
+					selectingProgressDict['Progress Value'][0] += stepSize
+					selectedProgressBar['value'] = selectingProgressDict['Progress Value'][0]
+					print('select success')
+					
+def readingXML(outputPoemList):
+	"""Creating a dictionary in the form (filename: [title, text])"""
+	poemDict = {}	
+	outputPoemList = [[str(poemName[0]), str(poemName[1]), str(poemName[2])] for poemName in outputPoemList]
+	outputPoemList = [f"{'-'.join(poemName)}.xml" for poemName in outputPoemList]
+	for poemName in outputPoemList:
+		poemDict[poemName] = {}
+		poemFilePath = os.path.join(poemListPath, poemName)
+		try:
+			tree = ET.parse(poemFilePath)
+		except:
+			with open(poemFilePath, 'r') as infile:
+				data = infile.read()
+				with open(poemFilePath, 'w') as outfile:
+					data.encode('UTF-8')
+					data = data.replace('&', '&amp;').replace('"', '&quot;').replace('“', '&quot;').replace('’', '&apos;').replace("'", "&apos;")
+					outfile.write(data)
+			tree = ET.parse(poemFilePath)
 		root = tree.getroot()
-		temp_lst.append(root[0].text)
-		temp_lst.append(root[2].text) 
-		content_lst.append(temp_lst)
-		name_lst.append(filename[:-4])
+		poemDict[poemName]['Title'] = (root[0].text)
+		poemDict[poemName]['Content'] = root[2].text
+	return poemDict
 
-	text_dict = dict(zip(name_lst, content_lst))
-	return text_dict
-
-def creatingTextDocumentOutput(text_dict, final_lst):
-	#Outputting to a word document
-	counter2 = 0
-
+def creatingTextDocumentOutput(root, poemDict, startingPoem, numOfPoems, parentFrame):
+	"""Outputting to a word document"""
 	doc = docx.Document()
-	for i in text_dict.keys():
-		counter2 += 1 
+	stepSize = 10
+	writeProgressBar = createProgressBar(parentFrame, 3)
+	for poemName in poemDict.keys():
 		style = doc.styles['Normal']
 		font = style.font
 		font.name = 'Helvetica'
 		font.size = Pt(14)
 		par = doc.add_paragraph()
 		par.paragraph_format.line_spacing = 1
-		run1 = par.add_run(i)
+		run1 = par.add_run(poemName)
 		run1.add_break(WD_BREAK.LINE)
 		run1.add_break(WD_BREAK.LINE)
-		if text_dict[i][0] != None:
-			if text_dict[i][0].isspace() == False:
-				run2 = par.add_run(text_dict[i][0])
+		if poemDict[poemName]['Title'] != None:
+			if poemDict[poemName]['Title'].isspace() == False:
+				run2 = par.add_run(poemDict[poemName]['Title'])
 				run2.bold = True
 				run2.add_break(WD_BREAK.LINE)
 				run2.add_break(WD_BREAK.LINE)
-		run3 = par.add_run(text_dict[i][1])
-		if counter2 < len(text_dict):
-			run3.add_break(WD_BREAK.PAGE)
-	doc.save('Syllabary Test.docx')
-
-	print(text_dict.keys())
-	print("length is " + str(len(final_lst)))
-	print("length of set is " + str(len(set(text_dict.keys()))))
+		run3 = par.add_run(poemDict[poemName]['Content'])
+		run3.add_break(WD_BREAK.PAGE)
+		doc.save(f'PoemGenerator_{startingPoem}_{numOfPoems}.docx')
+		writeProgressBar['value'] += stepSize
+		print(writeProgressBar['value'])
+		root.update_idletasks
+	print('finished writing')
+		

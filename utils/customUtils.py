@@ -47,7 +47,7 @@ def preRunCleanUp():
 		os.system('cls')
 	sysStatus('Run Started...\n')
 
-def _convertPath(inputPath):
+def convertPath(inputPath):
 	# Convert paths to work on any operating system
 	if sys.platform.startswith('win'):
 		temp = inputPath.replace('/', '\\')
